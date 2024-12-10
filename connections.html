@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connections Game</title>
+    <link rel="stylesheet" href="../startbootstrap-clean-blog-gh-pages/css/styles.css">
+    <style>
+        body
+        {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        .word {
+            padding: 20px;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .selected {
+            background-color: #ffd700;
+        }
+        .group-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 10px auto;
+        }
+        .easy {
+            background-color: lightgreen;
+            border-color: green;
+        }
+        .medium {
+            background-color: lightyellow;
+            border-color: orange;
+        }
+        .hard {
+            background-color: lightcoral;
+            border-color: red;
+        }
+        .very-hard {
+            background-color: plum;
+            border-color: purple;
+        }
+    </style>
+</head>
+<body style="background-color: antiquewhite;">
+        
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light" id="">
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand" href="index.html">Elizabeth Geary</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="Resume.html">Resume</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="scratch.html">Scratch Page</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="connections.html">Connections Game</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <h1>Connections Game</h1>
+    <p>Group the words by their subtle connections! Colors reflect difficulty:</p>
+    <ul>
+        <li><span style="color: green; font-weight: bold;">Easy</span>: Obvious links</li>
+        <li><span style="color: orange; font-weight: bold;">Medium</span>: Slightly obscure</li>
+        <li><span style="color: red; font-weight: bold;">Hard</span>: Challenging</li>
+        <li><span style="color: purple; font-weight: bold;">Very Hard</span>: Abstract</li>
+    </ul>
+    <div id="game-board"></div>
+    <div id="completed-groups"></div>
+    <p id="message"></p>
+    <p id="guess-info"></p>
+    <button id="submit-guess">Submit Guess</button>
+    <script>
+        const words = [
+            // Easy Group
+            "deliberation", "consideration", "reflection", "scrutiny",
+            // Medium Group
+            "flint", "lighter", "matches", "magnifying glass",
+            // Hard Group
+            "microscope", "slide", "specimen", "stain",
+            // Very Hard Group
+            "factor", "files", "games", "ray"
+        ];
+
+        const groups = [
+            { words: ["deliberation", "consideration", "reflection", "scrutiny"], difficulty: "easy",meaning:"Ways to think about something" },
+            { words: ["flint", "lighter", "matches", "magnifying glass"], difficulty: "medium",meaning:"Ways to start a fire" },
+            { words: ["microscope", "slide", "specimen", "stain"], difficulty: "hard",meaning:"Things used to examine" },
+            { words: ["factor", "files", "games", "ray"], difficulty: "very-hard",meaning:"Things following 'X-'" }
+        ];
+
+        // Shuffle words
+        const shuffledWords = words.sort(() => 0.5 - Math.random());
+        const board = document.getElementById("game-board");
+        const completedGroups = document.getElementById("completed-groups");
+        const message = document.getElementById("message");
+        const guessInfo = document.getElementById("guess-info");
+        const submitGuessButton = document.getElementById("submit-guess");
+
+        let selected = [];
+        let correctGroups = 0;
+        let guessCount = 0;
+        const maxGuesses = 5;
+        let remainingGuesses = maxGuesses;
+
+        // Render shuffled words
+        shuffledWords.forEach(word => {
+            const tile = document.createElement("div");
+            tile.classList.add("word");
+            tile.textContent = word;
+            tile.addEventListener("click", () => selectWord(tile));
+            board.appendChild(tile);
+        });
+
+        // Word click handler
+        function selectWord(tile) {
+            if (tile.classList.contains("selected")) {
+                tile.classList.remove("selected");
+                selected = selected.filter(word => word !== tile.textContent);
+            } else {
+                tile.classList.add("selected");
+                selected.push(tile.textContent);
+            }
+        }
+
+        // Submit guess handler
+        submitGuessButton.addEventListener("click", () => {
+            if (selected.length === 4) {
+                checkGroup();
+
+                guessInfo.textContent = `You have ${remainingGuesses} guesses left.`;
+
+                if (correctGroups === 4) {
+                    message.textContent = "You found all the groups! 🎉";
+                    submitGuessButton.disabled = true;
+                } else if (remainingGuesses === 0) {
+                    revealAnswers();
+                }
+            } else {
+                message.textContent = "You must select exactly 4 words before submitting a guess.";
+            }
+
+            selected.forEach(word => {
+                const tile = Array.from(board.children).find(el => el.textContent === word);
+                if (tile) tile.classList.remove("selected");
+            });
+            selected = [];
+        });
+
+        function checkGroup() {
+            const group = groups.find(group =>
+                group.words.every(word => selected.includes(word))
+            );
+
+            if (group) {
+                const groupRow = document.createElement("div");
+                groupRow.classList.add("group-row", group.difficulty);
+                selected.forEach(word => {
+                    const tile = Array.from(board.children).find(
+                        el => el.textContent === word
+                    );
+                    if (tile) {
+                        tile.classList.remove("selected");
+                        tile.classList.add(group.difficulty);
+                        board.removeChild(tile);
+                        groupRow.appendChild(tile);
+                    }
+                });
+                completedGroups.appendChild(groupRow);
+                correctGroups++;
+                message.textContent = `Correct group! (${group.difficulty.toUpperCase()}) -- ${group.meaning}. Keep going.`;
+            } else {
+                guessCount++;
+                remainingGuesses--;
+                message.textContent = "Not a valid group. Try again.";
+            }
+        }
+
+        function revealAnswers() {
+            message.textContent = "Ah darn! You lost. Here are the correct answers.";
+            groups.forEach(group => {
+                const groupRow = document.createElement("div");
+                groupRow.classList.add("group-row", group.difficulty);
+                group.words.forEach(word => {
+                    const tile = Array.from(board.children).find(el => el.textContent === word);
+                    if (tile) {
+                        tile.classList.remove("selected");
+                        tile.classList.add(group.difficulty);
+                        board.removeChild(tile);
+                        groupRow.appendChild(tile);
+                    }
+                });
+                completedGroups.appendChild(groupRow);
+            });
+            submitGuessButton.disabled = true;
+        }
+
+        // Initialize guess info on page load
+        guessInfo.textContent = `You have ${remainingGuesses} guesses left.`;
+    </script>
+</body>
+</html>
