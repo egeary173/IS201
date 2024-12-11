@@ -101,4 +101,6 @@ padding-bottom: 20px;
 text-align: center;
 }
 
-
+div.content {
+padding-bottom: 400px;
+}
